@@ -1,14 +1,237 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma/client"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  LOCATOR
+  CUSTOMER
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+enum TransactionType {
+  DEPOSIT
+  PAYMENT
+  REFUND
+  BAIL_FORFEIT
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String?  @unique
+  emailVerified Boolean  @default(false) @map("email_verified")
+  loginNumber   String?  @unique @map("login_number")
+  password      String
+  role          UserRole @default(CUSTOMER)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  company  Company?
+  customer Customer?
+
+  @@map("users")
+}
+
+model Company {
+  id          String   @id @default(uuid())
+  userId      String   @unique @map("user_id")
+  name        String
+  cnpj        String   @unique
+  phone       String?
+  description String?
+  evaluation  Float    @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  user  User   @relation(fields: [userId], references: [id])
+  units Unit[]
+
+  @@map("companies")
+}
+
+model Customer {
+  id              String   @id @default(uuid())
+  userId          String   @unique @map("user_id")
+  name            String
+  cpf             String   @unique
+  phone           String?
+  balance         Decimal  @default(0) @db.Decimal(10, 2)
+  punishmentCount Int      @default(0) @map("punishment_count")
+  lastPunishedAt  DateTime? @map("last_punished_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  user              User              @relation(fields: [userId], references: [id])
+  reservations      Reservation[]
+  reviews           Review[]
+  ownedCommunities  Community[]       @relation("CommunityOwner")
+  communityMemberships CommunityMember[]
+  transactions      Transaction[]
+  participatingIn   ReservationParticipant[]
+
+  @@map("customers")
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  units Unit[]
+
+  @@map("categories")
+}
+
+model Unit {
+  id                   String   @id @default(uuid())
+  companyId            String   @map("company_id")
+  categoryId           String   @map("category_id")
+  name                 String
+  description          String?
+  address              String
+  city                 String
+  state                String
+  pricePerHour         Decimal  @map("price_per_hour") @db.Decimal(10, 2)
+  requiresConfirmation Boolean  @default(false) @map("requires_confirmation")
+  bailValue            Decimal? @map("bail_value") @db.Decimal(10, 2)
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  company      Company       @relation(fields: [companyId], references: [id])
+  category     Category      @relation(fields: [categoryId], references: [id])
+  reservations Reservation[]
+  reviews      Review[]
+
+  @@map("units")
+}
+
+model Reservation {
+  id           String            @id @default(uuid())
+  customerId   String            @map("customer_id")
+  unitId       String            @map("unit_id")
+  startTime    DateTime          @map("start_time")
+  endTime      DateTime          @map("end_time")
+  status       ReservationStatus @default(PENDING)
+  totalPrice   Decimal           @map("total_price") @db.Decimal(10, 2)
+  bailPaid     Boolean           @default(false) @map("bail_paid")
+  isSplit      Boolean           @default(false) @map("is_split")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  // Relationships
+  customer     Customer                 @relation(fields: [customerId], references: [id])
+  unit         Unit                     @relation(fields: [unitId], references: [id])
+  review       Review?
+  participants ReservationParticipant[]
+
+  @@map("reservations")
+}
+
+model ReservationParticipant {
+  id            String      @id @default(uuid())
+  reservationId String      @map("reservation_id")
+  customerId    String      @map("customer_id")
+  amount        Decimal     @db.Decimal(10, 2)
+  paid          Boolean     @default(false)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  // Relationships
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  customer      Customer    @relation(fields: [customerId], references: [id])
+
+  @@unique([reservationId, customerId])
+  @@map("reservation_participants")
+}
+
+model Community {
+  id          String   @id @default(uuid())
+  ownerId     String   @map("owner_id")
+  name        String
+  description String?
+  inviteToken String   @unique @map("invite_token")
+  isPrivate   Boolean  @default(true) @map("is_private")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  owner   Customer          @relation("CommunityOwner", fields: [ownerId], references: [id])
+  members CommunityMember[]
+
+  @@map("communities")
+}
+
+model CommunityMember {
+  id          String   @id @default(uuid())
+  communityId String   @map("community_id")
+  customerId  String   @map("customer_id")
+  joinedAt    DateTime @default(now()) @map("joined_at")
+
+  // Relationships
+  community Community @relation(fields: [communityId], references: [id])
+  customer  Customer  @relation(fields: [customerId], references: [id])
+
+  @@unique([communityId, customerId])
+  @@map("community_members")
+}
+
+model Review {
+  id            String   @id @default(uuid())
+  reservationId String   @unique @map("reservation_id")
+  customerId    String   @map("customer_id")
+  unitId        String   @map("unit_id")
+  rating        Int      // 0 to 10
+  comment       String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  reservation Reservation @relation(fields: [reservationId], references: [id])
+  customer    Customer    @relation(fields: [customerId], references: [id])
+  unit        Unit        @relation(fields: [unitId], references: [id])
+
+  @@map("reviews")
+}
+
+model Transaction {
+  id         String            @id @default(uuid())
+  customerId String            @map("customer_id")
+  amount     Decimal           @db.Decimal(10, 2)
+  type       TransactionType
+  status     TransactionStatus @default(PENDING)
+  pixCode    String?           @map("pix_code")
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+
+  // Relationships
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@map("transactions")
 }
