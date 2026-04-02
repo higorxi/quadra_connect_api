@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma/client"
@@ -11,4 +5,95 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+
+
+enum Role {
+  USER
+  OWNER
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING_APPROVAL
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum SpaceCategory {
+  FUTEBOL
+  BEACH_TENNIS
+  COWORKING
+}
+
+model User {
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt() @map("updated_at")
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String?
+  role      Role     @default(USER)
+  
+  company   Company?
+  schedules Schedule[]
+
+  @@map("users")
+}
+
+model Company {
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt() @map("updated_at")
+  id          String   @id @default(uuid())
+  name        String
+  cnpjCpf     String   @unique @map("cnpj_cpf")
+  description String?
+  logoUrl     String?  @map("logo_url")
+  ownerId     String   @unique @map("owner_id")
+
+  owner  User    @relation(fields: [ownerId], references: [id])
+  spaces Space[]
+
+  @@map("companies")
+}
+
+model Space {
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @default(now()) @updatedAt() @map("updated_at")
+  id             String        @id @default(uuid())
+  title          String
+  description    String
+  category       SpaceCategory
+  pricePerHour   Decimal       @map("price_per_hour")
+  address        String
+  latitude       Float?
+  longitude      Float?
+  instantBooking Boolean       @default(true) @map("instant_booking")
+  isActive       Boolean       @default(true) @map("is_active")
+  companyId      String        @map("company_id")
+
+  company   Company    @relation(fields: [companyId], references: [id])
+  schedules Schedule[]
+
+  @@map("spaces")
+}
+
+model Schedule {
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @default(now()) @updatedAt() @map("updated_at")
+  id         String        @id @default(uuid())
+  startTime  DateTime      @map("start_time")
+  endTime    DateTime      @map("end_time")
+  totalPrice Decimal       @map("total_price")
+  status     BookingStatus @default(PENDING_APPROVAL)
+  customerId String        @map("customer_id")
+  spaceId    String        @map("space_id")
+
+  customer User  @relation(fields: [customerId], references: [id])
+  space    Space @relation(fields: [spaceId], references: [id])
+
+  @@map("schedules")
 }
