@@ -9,7 +9,14 @@ import { SchedulesModule } from './schedules/schedules.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, CompaniesModule, SpacesModule, SchedulesModule, PrismaModule],
+  imports: [
+    AuthModule,
+    UsersModule,
+    CompaniesModule,
+    SpacesModule,
+    SchedulesModule,
+    PrismaModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
