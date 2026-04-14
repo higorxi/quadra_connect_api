@@ -1,5 +1,7 @@
 name: Deploy NestJS
 
+# Desativado mas pronto para conectar com o EC2
+
 on:
   push:
     branches:
