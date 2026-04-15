@@ -17,12 +17,12 @@ export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
 
   @Get('me')
-  findMine(@CurrentUser() user: AuthenticatedUser) {
+  async findMine(@CurrentUser() user: AuthenticatedUser) {
     return this.companiesService.findMine(user);
   }
 
   @Patch('me')
-  updateMine(
+  async updateMine(
     @CurrentUser() user: AuthenticatedUser,
     @Body() updateCompanyDto: UpdateCompanyDto,
   ) {

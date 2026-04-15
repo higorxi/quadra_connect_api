@@ -15,17 +15,17 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  findAll() {
+  async findAll() {
     return this.usersService.findAll();
   }
 
   @Get('me/profile')
-  me(@CurrentUser() user: AuthenticatedUser) {
+  async me(@CurrentUser() user: AuthenticatedUser) {
     return this.usersService.findMe(user);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
 }

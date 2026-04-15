@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { compare, hash } from 'bcrypt';
-import { PrismaService } from '../prisma/prisma.service';
 import { ProfileType } from '../common/enums/profile-type.enum';
 import { UserRole } from '../common/enums/user-role.enum';
 import { RegisterUserDto } from './dto/register-user.dto';
@@ -14,20 +13,25 @@ import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { UsersService } from '../users/users.service';
+import { CompaniesService } from '../companies/companies.service';
+import { CustomersService } from '../customers/customers.service';
+import { UserWithRelations } from '../users/interfaces/user-summary.interface';
+import { Prisma } from '../../generated/prisma/client/client';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly usersService: UsersService,
+    private readonly companiesService: CompaniesService,
+    private readonly customersService: CustomersService,
     private readonly jwtService: JwtService,
   ) {}
 
   async register(registerDto: RegisterUserDto): Promise<AuthResponseDto> {
     this.validateRegisterPayload(registerDto);
 
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: registerDto.email },
-    });
+    const existingUser = await this.usersService.findByEmail(registerDto.email);
 
     if (existingUser) {
       throw new BadRequestException('Email já está em uso.');
@@ -36,56 +40,59 @@ export class AuthService {
     const passwordHash = await hash(registerDto.password, 10);
     const role = this.mapProfileTypeToRole(registerDto.profileType);
 
-    const created = await this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          email: registerDto.email,
-          password: passwordHash,
-          role,
-        },
-      });
+    const created = await this.usersService.runInTransaction(
+      async (db): Promise<UserWithRelations | null> => {
+        const createdUser = await this.usersService.createAuthUser(
+          {
+            email: registerDto.email,
+            password: passwordHash,
+            role,
+          },
+          db,
+        );
 
-      if (registerDto.profileType === ProfileType.COMPANY) {
-        const company = registerDto.company;
+        if (registerDto.profileType === ProfileType.COMPANY) {
+          const company = registerDto.company;
 
-        if (!company) {
-          throw new BadRequestException('Dados da company são obrigatórios.');
+          if (!company) {
+            throw new BadRequestException('Dados da company são obrigatórios.');
+          }
+
+          await this.companiesService.create(
+            {
+              data: {
+                userId: createdUser.id,
+                name: company.name,
+                cnpj: company.cnpj,
+                phone: company.phone,
+                description: company.description,
+              },
+            },
+            db,
+          );
+        } else {
+          const customer = registerDto.customer;
+
+          if (!customer) {
+            throw new BadRequestException('Dados do customer são obrigatórios.');
+          }
+
+          await this.customersService.create(
+            {
+              data: {
+                userId: createdUser.id,
+                name: customer.name,
+                cpf: customer.cpf,
+                phone: customer.phone,
+              },
+            },
+            db,
+          );
         }
 
-        await tx.company.create({
-          data: {
-            userId: user.id,
-            name: company.name,
-            cnpj: company.cnpj,
-            phone: company.phone,
-            description: company.description,
-          },
-        });
-      } else {
-        const customer = registerDto.customer;
-
-        if (!customer) {
-          throw new BadRequestException('Dados do customer são obrigatórios.');
-        }
-
-        await tx.customer.create({
-          data: {
-            userId: user.id,
-            name: customer.name,
-            cpf: customer.cpf,
-            phone: customer.phone,
-          },
-        });
-      }
-
-      return tx.user.findUnique({
-        where: { id: user.id },
-        include: {
-          company: true,
-          customer: true,
-        },
-      });
-    });
+        return this.usersService.findByIdWithRelations(createdUser.id, db);
+      },
+    );
 
     if (!created) {
       throw new NotFoundException('Usuário recém-criado não foi encontrado.');
@@ -95,13 +102,7 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
-    const user = await this.prisma.user.findUnique({
-      where: { email: loginDto.email },
-      include: {
-        company: true,
-        customer: true,
-      },
-    });
+    const user = await this.usersService.findByEmailWithRelations(loginDto.email);
 
     if (!user) {
       throw new UnauthorizedException('Credenciais inválidas.');
@@ -117,13 +118,7 @@ export class AuthService {
   }
 
   async me(authenticatedUser: AuthenticatedUser): Promise<AuthResponseDto['user']> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: authenticatedUser.sub },
-      include: {
-        company: true,
-        customer: true,
-      },
-    });
+    const user = await this.usersService.findByIdWithRelations(authenticatedUser.sub);
 
     if (!user) {
       throw new NotFoundException('Usuário não encontrado.');
@@ -132,13 +127,7 @@ export class AuthService {
     return this.buildAuthResponse(user).user;
   }
 
-  private buildAuthResponse(user: {
-    id: string;
-    email: string | null;
-    role: UserRole;
-    company?: { id: string } | null;
-    customer?: { id: string } | null;
-  }): AuthResponseDto {
+  private buildAuthResponse(user: UserWithRelations): AuthResponseDto {
     const profileType = this.mapRoleToProfileType(user.role);
 
     const payload: JwtPayload = {

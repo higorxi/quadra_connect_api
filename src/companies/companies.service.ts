@@ -1,53 +1,42 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
-import { CompanyEntity } from './entities/company.entity';
+import { CompanySummary } from './interfaces/company-summary.interface';
 import { UpdateCompanyDto } from './dto/update-company.dto';
+import { Prisma } from '../../generated/prisma/client/client';
+
+type CompanyDbAccessor = Pick<PrismaService, 'company'>;
 
 @Injectable()
 export class CompaniesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findMine(authenticatedUser: AuthenticatedUser): Promise<CompanyEntity> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: authenticatedUser.sub },
-      include: {
-        company: true,
-      },
+  async findMine(authenticatedUser: AuthenticatedUser): Promise<CompanySummary> {
+    const company = await this.findFirst({
+      where: { userId: authenticatedUser.sub },
     });
 
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado.');
-    }
-
-    if (!user.company) {
+    if (!company) {
       throw new ForbiddenException('Usuário não possui company vinculada.');
     }
 
-    return CompanyEntity.fromPrisma(user.company);
+    return this.toSummary(company);
   }
 
   async updateMine(
     authenticatedUser: AuthenticatedUser,
     updateCompanyDto: UpdateCompanyDto,
-  ): Promise<CompanyEntity> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: authenticatedUser.sub },
-      select: {
-        company: {
-          select: { id: true },
-        },
-      },
+  ): Promise<CompanySummary> {
+    const company = await this.findFirst({
+      where: { userId: authenticatedUser.sub },
     });
 
-    const companyId = user?.company?.id;
-
-    if (!companyId) {
+    if (!company) {
       throw new ForbiddenException('Usuário não possui company vinculada.');
     }
 
-    const updatedCompany = await this.prisma.company.update({
-      where: { id: companyId },
+    const updatedCompany = await this.update({
+      where: { id: company.id },
       data: {
         name: updateCompanyDto.name,
         phone: updateCompanyDto.phone,
@@ -55,19 +44,19 @@ export class CompaniesService {
       },
     });
 
-    return CompanyEntity.fromPrisma(updatedCompany);
+    return this.toSummary(updatedCompany);
   }
 
-  async findAll(): Promise<CompanyEntity[]> {
-    const companies = await this.prisma.company.findMany({
+  async findAll(): Promise<CompanySummary[]> {
+    const companies = await this.findMany({
       orderBy: { createdAt: 'desc' },
     });
 
-    return companies.map((company) => CompanyEntity.fromPrisma(company));
+    return companies.map((company) => this.toSummary(company));
   }
 
-  async findOne(id: string): Promise<CompanyEntity> {
-    const company = await this.prisma.company.findUnique({
+  async findOne(id: string): Promise<CompanySummary> {
+    const company = await this.findFirst({
       where: { id },
     });
 
@@ -75,6 +64,50 @@ export class CompaniesService {
       throw new NotFoundException('Company não encontrada.');
     }
 
-    return CompanyEntity.fromPrisma(company);
+    return this.toSummary(company);
+  }
+
+  async findFirst(args: Prisma.CompanyFindFirstArgs, db?: CompanyDbAccessor) {
+    return this.companyModel(db).findFirst(args);
+  }
+
+  async findMany(args: Prisma.CompanyFindManyArgs, db?: CompanyDbAccessor) {
+    return this.companyModel(db).findMany(args);
+  }
+
+  async create(args: Prisma.CompanyCreateArgs, db?: CompanyDbAccessor) {
+    return this.companyModel(db).create(args);
+  }
+
+  async update(args: Prisma.CompanyUpdateArgs, db?: CompanyDbAccessor) {
+    return this.companyModel(db).update(args);
+  }
+
+  private companyModel(db?: CompanyDbAccessor) {
+    return db?.company ?? this.prisma.company;
+  }
+
+  private toSummary(company: {
+    id: string;
+    userId: string;
+    name: string;
+    cnpj: string;
+    phone: string | null;
+    description: string | null;
+    evaluation: number;
+    createdAt: Date;
+    updatedAt: Date;
+  }): CompanySummary {
+    return {
+      id: company.id,
+      userId: company.userId,
+      name: company.name,
+      cnpj: company.cnpj,
+      phone: company.phone,
+      description: company.description,
+      evaluation: company.evaluation,
+      createdAt: company.createdAt,
+      updatedAt: company.updatedAt,
+    };
   }
 }

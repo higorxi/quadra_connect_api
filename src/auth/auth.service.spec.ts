@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { UsersService } from '../users/users.service';
+import { CompaniesService } from '../companies/companies.service';
+import { CustomersService } from '../customers/customers.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -12,18 +14,24 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         {
-          provide: PrismaService,
+          provide: UsersService,
           useValue: {
-            user: {
-              findUnique: jest.fn(),
-            },
-            company: {
-              findUnique: jest.fn(),
-            },
-            customer: {
-              findUnique: jest.fn(),
-            },
-            $transaction: jest.fn(),
+            findFirst: jest.fn(),
+            createUser: jest.fn(),
+            findById: jest.fn(),
+            findByEmailWithPassword: jest.fn(),
+          },
+        },
+        {
+          provide: CompaniesService,
+          useValue: {
+            create: jest.fn(),
+          },
+        },
+        {
+          provide: CustomersService,
+          useValue: {
+            create: jest.fn(),
           },
         },
       ],

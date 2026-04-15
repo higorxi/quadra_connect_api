@@ -11,3 +11,14 @@ export interface UserSummary {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface UserWithRelations {
+  id: string;
+  email: string | null;
+  role: UserRole;
+  password: string;
+  company?: { id: string } | null;
+  customer?: { id: string } | null;
+  createdAt: Date;
+  updatedAt: Date;
+}

@@ -10,7 +10,7 @@ export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
   @Get('me')
-  findOwnProfile(@CurrentUser() user: AuthenticatedUser) {
+  async findOwnProfile(@CurrentUser() user: AuthenticatedUser) {
     return this.customersService.findOwnProfile(user);
   }
 }

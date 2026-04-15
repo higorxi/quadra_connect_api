@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CompaniesController } from './companies.controller';
 import { CompaniesService } from './companies.service';
-import { PrismaService } from '../prisma/prisma.service';
 
 describe('CompaniesController', () => {
   let controller: CompaniesController;
@@ -10,10 +9,12 @@ describe('CompaniesController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CompaniesController],
       providers: [
-        CompaniesService,
         {
-          provide: PrismaService,
-          useValue: {},
+          provide: CompaniesService,
+          useValue: {
+            findMine: jest.fn(),
+            updateMine: jest.fn(),
+          },
         },
       ],
     }).compile();
