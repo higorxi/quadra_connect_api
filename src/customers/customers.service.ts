@@ -1,11 +1,7 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import {
-  Customer,
-  Prisma,
-} from '../../generated/prisma/client/client';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { Customer, Prisma } from '../../generated/prisma/client/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
-import { ProfileType } from '../common/enums/profile-type.enum';
 import { CustomerSummary } from './interfaces/customer-summary.interface';
 
 @Injectable()
@@ -76,7 +72,9 @@ export class CustomersService {
     });
   }
 
-  async createCustomer(data: Prisma.CustomerUncheckedCreateInput): Promise<Customer> {
+  async createCustomer(
+    data: Prisma.CustomerUncheckedCreateInput,
+  ): Promise<Customer> {
     return await this.prismaService.customer.create({
       data,
     });
@@ -88,7 +86,9 @@ export class CustomersService {
     });
   }
 
-  async findFirst(args: Prisma.CustomerFindFirstArgs): Promise<Customer | null> {
+  async findFirst(
+    args: Prisma.CustomerFindFirstArgs,
+  ): Promise<Customer | null> {
     return await this.prismaService.customer.findFirst(args);
   }
 
@@ -107,13 +107,9 @@ export class CustomersService {
     return await this.prismaService.customer.update(args);
   }
 
-  async findOwnProfile(authenticatedUser: AuthenticatedUser): Promise<CustomerSummary> {
-    if (authenticatedUser.profileType !== ProfileType.CUSTOMER) {
-      throw new ForbiddenException(
-        'Apenas usuários customer podem acessar este endpoint.',
-      );
-    }
-
+  async findOwnProfile(
+    authenticatedUser: AuthenticatedUser,
+  ): Promise<CustomerSummary> {
     const customer = await this.findCustomer({ userId: authenticatedUser.sub });
 
     if (!customer) {
