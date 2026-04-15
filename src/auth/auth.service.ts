@@ -5,10 +5,10 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserRole } from 'generated/prisma/client';
 import { compare, hash } from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProfileType } from '../common/enums/profile-type.enum';
+import { UserRole } from '../common/enums/user-role.enum';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';

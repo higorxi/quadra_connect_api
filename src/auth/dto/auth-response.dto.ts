@@ -1,5 +1,5 @@
-import { UserRole } from 'generated/prisma/client';
 import { ProfileType } from '../../common/enums/profile-type.enum';
+import { UserRole } from '../../common/enums/user-role.enum';
 
 export class AuthUserResponseDto {
   id: string;

@@ -1,5 +1,5 @@
 import { ProfileType } from '../../common/enums/profile-type.enum';
-import { UserRole } from 'generated/prisma/client';
+import { UserRole } from '../../common/enums/user-role.enum';
 
 export class UserEntity {
   constructor(partial: UserEntity) {

@@ -9,7 +9,7 @@ import { UserEntity } from './entities/user.entity';
 import { UserSummary } from './interfaces/user-summary.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ProfileType } from '../common/enums/profile-type.enum';
-import { UserRole } from 'generated/prisma/client';
+import { UserRole } from '../common/enums/user-role.enum';
 
 @Injectable()
 export class UsersService {

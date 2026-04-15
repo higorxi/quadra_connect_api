@@ -1,4 +1,4 @@
-import { UserRole } from 'generated/prisma/client';
+import { UserRole } from '../../common/enums/user-role.enum';
 import { ProfileType } from '../../common/enums/profile-type.enum';
 
 export interface UserSummary {
