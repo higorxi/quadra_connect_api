@@ -17,8 +17,8 @@ export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
 
   @Get('me')
-  async findMine(@CurrentUser() user: AuthenticatedUser) {
-    return this.companiesService.findMine(user);
+  async findCompanyByUserId(@CurrentUser() user: AuthenticatedUser) {
+    return this.companiesService.findCompanyByUserId(user.sub);
   }
 
   @Patch('me')
@@ -26,6 +26,6 @@ export class CompaniesController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() updateCompanyDto: UpdateCompanyDto,
   ) {
-    return this.companiesService.updateMine(user, updateCompanyDto);
+    return this.companiesService.updateCompanyByUserId(user.sub, updateCompanyDto);
   }
 }

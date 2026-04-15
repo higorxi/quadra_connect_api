@@ -80,25 +80,21 @@ export class CompaniesService {
     return this.toSummary(company);
   }
 
-  async findMine(authenticatedUser: AuthenticatedUser): Promise<CompanySummary> {
-    const company = await this.findCompany({ userId: authenticatedUser.sub });
+  async findCompanyByUserId(userId: string): Promise<CompanySummary> {
+    const company = await this.findCompany({ userId });
 
     if (!company) {
-      throw new ForbiddenException('Usuário não possui company vinculada.');
+      throw new NotFoundException('Company não encontrada.');
     }
 
     return company;
   }
 
-  async updateMine(
-    authenticatedUser: AuthenticatedUser,
+  async updateCompanyByUserId(
+    userId: string,
     updateCompanyDto: UpdateCompanyDto,
   ): Promise<CompanySummary> {
-    const company = await this.findCompany({ userId: authenticatedUser.sub });
-
-    if (!company) {
-      throw new ForbiddenException('Usuário não possui company vinculada.');
-    }
+    const company = await this.findCompanyByUserId(userId);
 
     const updatedCompany = await this.updateCompany({
       where: { id: company.id },
