@@ -45,7 +45,9 @@ export class TransactionsService {
     return this.toSummary(transaction);
   }
 
-  async findMine(authenticatedUser: AuthenticatedUser): Promise<TransactionSummary[]> {
+  async findMine(
+    authenticatedUser: AuthenticatedUser,
+  ): Promise<TransactionSummary[]> {
     const customer = await this.customersService.findByUserIdOrThrow(
       authenticatedUser.sub,
     );

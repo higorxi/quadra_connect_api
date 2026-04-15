@@ -9,6 +9,7 @@ import {
   ReservationStatus,
 } from '../../generated/prisma/client/client';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { ProfileType } from '../common/enums/profile-type.enum';
 import { CompaniesService } from '../companies/companies.service';
 import { CustomersService } from '../customers/customers.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -47,20 +48,23 @@ export class ReservationsService {
     }
 
     if (endTime <= startTime) {
-      throw new BadRequestException('A data final deve ser maior que a data inicial.');
+      throw new BadRequestException(
+        'A data final deve ser maior que a data inicial.',
+      );
     }
 
-    const overlappingReservation = await this.prismaService.reservation.findFirst({
-      where: {
-        unitId: unit.id,
-        status: {
-          in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+    const overlappingReservation =
+      await this.prismaService.reservation.findFirst({
+        where: {
+          unitId: unit.id,
+          status: {
+            in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+          },
+          startTime: { lt: endTime },
+          endTime: { gt: startTime },
         },
-        startTime: { lt: endTime },
-        endTime: { gt: startTime },
-      },
-      select: { id: true },
-    });
+        select: { id: true },
+      });
 
     if (overlappingReservation) {
       throw new BadRequestException(
@@ -93,7 +97,9 @@ export class ReservationsService {
     return this.toSummary(reservation);
   }
 
-  async findMine(authenticatedUser: AuthenticatedUser): Promise<ReservationSummary[]> {
+  async findMine(
+    authenticatedUser: AuthenticatedUser,
+  ): Promise<ReservationSummary[]> {
     const customer = await this.customersService.findByUserIdOrThrow(
       authenticatedUser.sub,
     );
@@ -108,7 +114,9 @@ export class ReservationsService {
   async findForCompany(
     authenticatedUser: AuthenticatedUser,
   ): Promise<ReservationSummary[]> {
-    const company = await this.companiesService.findCompanyByUserId(authenticatedUser.sub);
+    const company = await this.companiesService.findCompanyByUserId(
+      authenticatedUser.sub,
+    );
 
     const reservations = await this.prismaService.reservation.findMany({
       where: {
@@ -139,7 +147,7 @@ export class ReservationsService {
       throw new NotFoundException('Reserva não encontrada.');
     }
 
-    if (authenticatedUser.profileType === 'CUSTOMER') {
+    if (authenticatedUser.profileType === ProfileType.CUSTOMER) {
       const customer = await this.customersService.findByUserIdOrThrow(
         authenticatedUser.sub,
       );
@@ -178,7 +186,7 @@ export class ReservationsService {
       throw new NotFoundException('Reserva não encontrada.');
     }
 
-    if (authenticatedUser.profileType === 'CUSTOMER') {
+    if (authenticatedUser.profileType === ProfileType.CUSTOMER) {
       const customer = await this.customersService.findByUserIdOrThrow(
         authenticatedUser.sub,
       );
@@ -187,7 +195,7 @@ export class ReservationsService {
       }
       if (
         updateReservationDto.status &&
-        ![ReservationStatus.CANCELLED].includes(updateReservationDto.status)
+        updateReservationDto.status !== ReservationStatus.CANCELLED
       ) {
         throw new ForbiddenException(
           'Customer só pode cancelar a própria reserva.',

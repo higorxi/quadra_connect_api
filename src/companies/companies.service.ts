@@ -33,7 +33,9 @@ export class CompaniesService {
     return companies.map((company) => this.toSummary(company));
   }
 
-  async findCompany(data: Prisma.CompanyWhereInput): Promise<CompanySummary | null> {
+  async findCompany(
+    data: Prisma.CompanyWhereInput,
+  ): Promise<CompanySummary | null> {
     const company = await this.prismaService.company.findFirst({
       where: data,
     });
@@ -72,7 +74,9 @@ export class CompaniesService {
     });
   }
 
-  async deleteCompany(where: Prisma.CompanyWhereUniqueInput): Promise<CompanySummary> {
+  async deleteCompany(
+    where: Prisma.CompanyWhereUniqueInput,
+  ): Promise<CompanySummary> {
     const company = await this.prismaService.company.delete({
       where,
     });
@@ -106,9 +110,9 @@ export class CompaniesService {
     return updatedCompany;
   }
 
-  async create(
-    params: { data: Prisma.CompanyUncheckedCreateInput },
-  ): Promise<CompanySummary> {
+  async create(params: {
+    data: Prisma.CompanyUncheckedCreateInput;
+  }): Promise<CompanySummary> {
     const company = await this.prismaService.company.create({
       data: params.data,
     });

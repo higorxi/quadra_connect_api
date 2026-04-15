@@ -5,7 +5,10 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
-import { UserSummary, UserWithRelations } from './interfaces/user-summary.interface';
+import {
+  UserSummary,
+  UserWithRelations,
+} from './interfaces/user-summary.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ProfileType } from '../common/enums/profile-type.enum';
 import { UserRole } from '../common/enums/user-role.enum';
@@ -20,7 +23,9 @@ import {
 export class UsersService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async findUser(data: FindFirstUserParams['where']): Promise<UserSummary | null> {
+  async findUser(
+    data: FindFirstUserParams['where'],
+  ): Promise<UserSummary | null> {
     const user = await this.findFirst({ where: data });
     return user ? this.toSummary(user) : null;
   }
@@ -80,47 +85,41 @@ export class UsersService {
   async findByEmailWithRelations(
     email: string,
   ): Promise<UserWithRelations | null> {
-    const user = await this.findFirst(
-      {
-        where: { email },
-        include: {
-          company: true,
-          customer: true,
-        },
+    const user = await this.findFirst({
+      where: { email },
+      include: {
+        company: true,
+        customer: true,
       },
-    );
+    });
 
     return user ? this.toWithRelations(user) : null;
   }
 
-  async findByIdWithRelations(
-    id: string,
-  ): Promise<UserWithRelations | null> {
-    const user = await this.findFirst(
-      {
-        where: { id },
-        include: {
-          company: true,
-          customer: true,
-        },
+  async findByIdWithRelations(id: string): Promise<UserWithRelations | null> {
+    const user = await this.findFirst({
+      where: { id },
+      include: {
+        company: true,
+        customer: true,
       },
-    );
+    });
 
     return user ? this.toWithRelations(user) : null;
   }
 
-  async createAuthUser(
-    data: { email: string; password: string; role: UserRole },
-  ): Promise<UserWithRelations> {
-    const user = await this.createUser(
-      {
-        data,
-        include: {
-          company: true,
-          customer: true,
-        },
+  async createAuthUser(data: {
+    email: string;
+    password: string;
+    role: UserRole;
+  }): Promise<UserWithRelations> {
+    const user = await this.createUser({
+      data,
+      include: {
+        company: true,
+        customer: true,
       },
-    );
+    });
 
     return this.toWithRelations(user);
   }

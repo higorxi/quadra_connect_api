@@ -1,8 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import {
-  Customer,
-  Prisma,
-} from '../../generated/prisma/client/client';
+import { Customer, Prisma } from '../../generated/prisma/client/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { CustomerSummary } from './interfaces/customer-summary.interface';
@@ -75,7 +72,9 @@ export class CustomersService {
     });
   }
 
-  async createCustomer(data: Prisma.CustomerUncheckedCreateInput): Promise<Customer> {
+  async createCustomer(
+    data: Prisma.CustomerUncheckedCreateInput,
+  ): Promise<Customer> {
     return await this.prismaService.customer.create({
       data,
     });
@@ -87,7 +86,9 @@ export class CustomersService {
     });
   }
 
-  async findFirst(args: Prisma.CustomerFindFirstArgs): Promise<Customer | null> {
+  async findFirst(
+    args: Prisma.CustomerFindFirstArgs,
+  ): Promise<Customer | null> {
     return await this.prismaService.customer.findFirst(args);
   }
 
@@ -106,7 +107,9 @@ export class CustomersService {
     return await this.prismaService.customer.update(args);
   }
 
-  async findOwnProfile(authenticatedUser: AuthenticatedUser): Promise<CustomerSummary> {
+  async findOwnProfile(
+    authenticatedUser: AuthenticatedUser,
+  ): Promise<CustomerSummary> {
     const customer = await this.findCustomer({ userId: authenticatedUser.sub });
 
     if (!customer) {

@@ -15,16 +15,18 @@ export class ProfileAccessGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const allowedProfiles =
-      this.reflector.getAllAndOverride<ProfileType[]>(
-        ALLOWED_PROFILES_KEY,
-        [context.getHandler(), context.getClass()],
-      ) ?? [];
+      this.reflector.getAllAndOverride<ProfileType[]>(ALLOWED_PROFILES_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]) ?? [];
 
     if (allowedProfiles.length === 0) {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<{ user?: AuthenticatedUser }>();
+    const request = context
+      .switchToHttp()
+      .getRequest<{ user?: AuthenticatedUser }>();
     const user = request.user;
 
     if (!user) {

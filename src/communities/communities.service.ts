@@ -46,7 +46,9 @@ export class CommunitiesService {
     return this.toSummary(community);
   }
 
-  async findMine(authenticatedUser: AuthenticatedUser): Promise<CommunitySummary[]> {
+  async findMine(
+    authenticatedUser: AuthenticatedUser,
+  ): Promise<CommunitySummary[]> {
     const customer = await this.customersService.findByUserIdOrThrow(
       authenticatedUser.sub,
     );
@@ -58,7 +60,9 @@ export class CommunitiesService {
     return communities.map((community) => this.toSummary(community));
   }
 
-  async findJoined(authenticatedUser: AuthenticatedUser): Promise<CommunitySummary[]> {
+  async findJoined(
+    authenticatedUser: AuthenticatedUser,
+  ): Promise<CommunitySummary[]> {
     const customer = await this.customersService.findByUserIdOrThrow(
       authenticatedUser.sub,
     );
@@ -159,14 +163,15 @@ export class CommunitiesService {
       throw new NotFoundException('Token de convite inválido.');
     }
 
-    const existingMembership = await this.prismaService.communityMember.findUnique({
-      where: {
-        communityId_customerId: {
-          communityId: community.id,
-          customerId: customer.id,
+    const existingMembership =
+      await this.prismaService.communityMember.findUnique({
+        where: {
+          communityId_customerId: {
+            communityId: community.id,
+            customerId: customer.id,
+          },
         },
-      },
-    });
+      });
 
     if (existingMembership) {
       throw new BadRequestException('Você já participa dessa comunidade.');

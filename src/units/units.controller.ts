@@ -60,7 +60,10 @@ export class UnitsController {
 
   @Delete(':id')
   @AllowedProfiles(ProfileType.COMPANY)
-  async remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+  async remove(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
     return this.unitsService.remove(user, id);
   }
 }

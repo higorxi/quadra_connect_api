@@ -5,13 +5,17 @@ export type UserFindParams = {
   take?: number;
   cursor?: Prisma.UserWhereUniqueInput;
   where?: Prisma.UserWhereInput;
-  orderBy?: Prisma.UserOrderByWithRelationInput | Prisma.UserOrderByWithRelationInput[];
+  orderBy?:
+    | Prisma.UserOrderByWithRelationInput
+    | Prisma.UserOrderByWithRelationInput[];
   include?: Prisma.UserInclude;
 };
 
 export type FindFirstUserParams = {
   where?: Prisma.UserWhereInput;
-  orderBy?: Prisma.UserOrderByWithRelationInput | Prisma.UserOrderByWithRelationInput[];
+  orderBy?:
+    | Prisma.UserOrderByWithRelationInput
+    | Prisma.UserOrderByWithRelationInput[];
   include?: Prisma.UserInclude;
 };
 
@@ -20,7 +24,9 @@ export type FindManyUsersParams = {
   take?: number;
   cursor?: Prisma.UserWhereUniqueInput;
   where?: Prisma.UserWhereInput;
-  orderBy?: Prisma.UserOrderByWithRelationInput | Prisma.UserOrderByWithRelationInput[];
+  orderBy?:
+    | Prisma.UserOrderByWithRelationInput
+    | Prisma.UserOrderByWithRelationInput[];
   include?: Prisma.UserInclude;
 };
 

@@ -51,7 +51,10 @@ export class CommunitiesController {
   }
 
   @Get(':id')
-  async findOne(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+  async findOne(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
     return this.communitiesService.findOne(user, id);
   }
 

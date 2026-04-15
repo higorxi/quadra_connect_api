@@ -73,7 +73,9 @@ export class AuthService {
       });
     }
 
-    const created = await this.usersService.findByIdWithRelations(createdUser.id);
+    const created = await this.usersService.findByIdWithRelations(
+      createdUser.id,
+    );
 
     if (!created) {
       throw new NotFoundException('Usuário recém-criado não foi encontrado.');
@@ -83,7 +85,9 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
-    const user = await this.usersService.findByEmailWithRelations(loginDto.email);
+    const user = await this.usersService.findByEmailWithRelations(
+      loginDto.email,
+    );
 
     if (!user) {
       throw new UnauthorizedException('Credenciais inválidas.');
@@ -98,8 +102,12 @@ export class AuthService {
     return this.buildAuthResponse(user);
   }
 
-  async me(authenticatedUser: AuthenticatedUser): Promise<AuthResponseDto['user']> {
-    const user = await this.usersService.findByIdWithRelations(authenticatedUser.sub);
+  async me(
+    authenticatedUser: AuthenticatedUser,
+  ): Promise<AuthResponseDto['user']> {
+    const user = await this.usersService.findByIdWithRelations(
+      authenticatedUser.sub,
+    );
 
     if (!user) {
       throw new NotFoundException('Usuário não encontrado.');
@@ -148,13 +156,20 @@ export class AuthService {
   }
 
   private validateRegisterPayload(registerDto: RegisterUserDto): void {
-    if (!registerDto.email || !registerDto.password || !registerDto.profileType) {
+    if (
+      !registerDto.email ||
+      !registerDto.password ||
+      !registerDto.profileType
+    ) {
       throw new BadRequestException(
         'email, password e profileType são obrigatórios.',
       );
     }
 
-    if (registerDto.profileType === ProfileType.COMPANY && !registerDto.company) {
+    if (
+      registerDto.profileType === ProfileType.COMPANY &&
+      !registerDto.company
+    ) {
       throw new BadRequestException('Dados da company são obrigatórios.');
     }
 

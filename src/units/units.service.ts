@@ -7,7 +7,6 @@ import {
 import { Prisma } from '../../generated/prisma/client/client';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { CompaniesService } from '../companies/companies.service';
-import { ProfileType } from '../common/enums/profile-type.enum';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUnitDto } from './dto/create-unit.dto';
 import { UpdateUnitDto } from './dto/update-unit.dto';
@@ -24,7 +23,9 @@ export class UnitsService {
     authenticatedUser: AuthenticatedUser,
     createUnitDto: CreateUnitDto,
   ): Promise<UnitSummary> {
-    const company = await this.companiesService.findCompanyByUserId(authenticatedUser.sub);
+    const company = await this.companiesService.findCompanyByUserId(
+      authenticatedUser.sub,
+    );
     await this.ensureCategoryExists(createUnitDto.categoryId);
 
     const unit = await this.prismaService.unit.create({
@@ -53,8 +54,12 @@ export class UnitsService {
     return units.map((unit) => this.toSummary(unit));
   }
 
-  async findByCompany(authenticatedUser: AuthenticatedUser): Promise<UnitSummary[]> {
-    const company = await this.companiesService.findCompanyByUserId(authenticatedUser.sub);
+  async findByCompany(
+    authenticatedUser: AuthenticatedUser,
+  ): Promise<UnitSummary[]> {
+    const company = await this.companiesService.findCompanyByUserId(
+      authenticatedUser.sub,
+    );
     const units = await this.prismaService.unit.findMany({
       where: { companyId: company.id },
       orderBy: { createdAt: 'desc' },
@@ -88,7 +93,9 @@ export class UnitsService {
       throw new NotFoundException('Unidade não encontrada.');
     }
 
-    const company = await this.companiesService.findCompanyByUserId(authenticatedUser.sub);
+    const company = await this.companiesService.findCompanyByUserId(
+      authenticatedUser.sub,
+    );
     if (unit.companyId !== company.id) {
       throw new ForbiddenException(
         'Você não tem permissão para alterar unidades de outra company.',
@@ -117,7 +124,10 @@ export class UnitsService {
     return this.toSummary(updatedUnit);
   }
 
-  async remove(authenticatedUser: AuthenticatedUser, id: string): Promise<UnitSummary> {
+  async remove(
+    authenticatedUser: AuthenticatedUser,
+    id: string,
+  ): Promise<UnitSummary> {
     const unit = await this.prismaService.unit.findUnique({
       where: { id },
     });
@@ -126,7 +136,9 @@ export class UnitsService {
       throw new NotFoundException('Unidade não encontrada.');
     }
 
-    const company = await this.companiesService.findCompanyByUserId(authenticatedUser.sub);
+    const company = await this.companiesService.findCompanyByUserId(
+      authenticatedUser.sub,
+    );
     if (unit.companyId !== company.id) {
       throw new ForbiddenException(
         'Você não tem permissão para remover unidades de outra company.',
