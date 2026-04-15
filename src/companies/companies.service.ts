@@ -6,8 +6,6 @@ import { UpdateCompanyDto } from './dto/update-company.dto';
 import { Prisma } from '../../generated/prisma/client/client';
 import { FindCompanyParams } from './types/company-params.type';
 
-type CompanyDbAccessor = Pick<PrismaService, 'company'>;
-
 @Injectable()
 export class CompaniesService {
   constructor(private readonly prismaService: PrismaService) {}
@@ -115,9 +113,8 @@ export class CompaniesService {
 
   async create(
     params: { data: Prisma.CompanyUncheckedCreateInput },
-    db?: CompanyDbAccessor,
   ): Promise<CompanySummary> {
-    const company = await (db?.company ?? this.prismaService.company).create({
+    const company = await this.prismaService.company.create({
       data: params.data,
     });
     return this.toSummary(company);

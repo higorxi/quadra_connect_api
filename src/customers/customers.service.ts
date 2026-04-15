@@ -2,18 +2,15 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import {
   Customer,
   Prisma,
-  UserRole as PrismaUserRole,
 } from '../../generated/prisma/client/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { ProfileType } from '../common/enums/profile-type.enum';
 import { CustomerSummary } from './interfaces/customer-summary.interface';
 
-type CustomerDbAccessor = Pick<PrismaService, 'customer'>;
-
 @Injectable()
 export class CustomersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   async getCustomersBy(params: {
     skip?: number;
@@ -23,7 +20,7 @@ export class CustomersService {
     orderBy?: Prisma.CustomerOrderByWithRelationInput;
   }): Promise<Customer[]> {
     const { skip, take, cursor, where, orderBy } = params;
-    return await this.prisma.customer.findMany({
+    return await this.prismaService.customer.findMany({
       where,
       skip,
       take,
@@ -40,7 +37,7 @@ export class CustomersService {
     orderBy?: Prisma.CustomerOrderByWithRelationInput;
   }): Promise<Customer[]> {
     const { skip, take, cursor, where, orderBy } = params;
-    return await this.prisma.customer.findMany({
+    return await this.prismaService.customer.findMany({
       where,
       skip,
       take,
@@ -51,9 +48,8 @@ export class CustomersService {
 
   async findCustomer(
     data: Prisma.CustomerWhereInput,
-    db?: CustomerDbAccessor,
   ): Promise<Customer | null> {
-    return await this.customerModel(db).findFirst({
+    return await this.prismaService.customer.findFirst({
       where: data,
     });
   }
@@ -63,7 +59,7 @@ export class CustomersService {
     data: Prisma.CustomerUncheckedUpdateInput;
   }): Promise<Customer> {
     const { where, data } = params;
-    return await this.prisma.customer.update({
+    return await this.prismaService.customer.update({
       where,
       data,
     });
@@ -74,53 +70,41 @@ export class CustomersService {
     data: Prisma.CustomerUpdateManyMutationInput;
   }): Promise<Prisma.BatchPayload> {
     const { where, data } = params;
-    return await this.prisma.customer.updateMany({
+    return await this.prismaService.customer.updateMany({
       where,
       data,
     });
   }
 
   async createCustomer(data: Prisma.CustomerUncheckedCreateInput): Promise<Customer> {
-    return await this.prisma.customer.create({
+    return await this.prismaService.customer.create({
       data,
     });
   }
 
   async deleteCustomer(customerId: string): Promise<Customer> {
-    return await this.prisma.customer.delete({
+    return await this.prismaService.customer.delete({
       where: { id: customerId },
     });
   }
 
-  async findFirst(
-    args: Prisma.CustomerFindFirstArgs,
-    db?: CustomerDbAccessor,
-  ): Promise<Customer | null> {
-    return await this.customerModel(db).findFirst(args);
+  async findFirst(args: Prisma.CustomerFindFirstArgs): Promise<Customer | null> {
+    return await this.prismaService.customer.findFirst(args);
   }
 
-  async findMany(
-    args?: Prisma.CustomerFindManyArgs,
-    db?: CustomerDbAccessor,
-  ): Promise<Customer[]> {
-    return await this.customerModel(db).findMany({
+  async findMany(args?: Prisma.CustomerFindManyArgs): Promise<Customer[]> {
+    return await this.prismaService.customer.findMany({
       ...args,
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async create(
-    args: Prisma.CustomerCreateArgs,
-    db?: CustomerDbAccessor,
-  ): Promise<Customer> {
-    return await this.customerModel(db).create(args);
+  async create(args: Prisma.CustomerCreateArgs): Promise<Customer> {
+    return await this.prismaService.customer.create(args);
   }
 
-  async update(
-    args: Prisma.CustomerUpdateArgs,
-    db?: CustomerDbAccessor,
-  ): Promise<Customer> {
-    return await this.customerModel(db).update(args);
+  async update(args: Prisma.CustomerUpdateArgs): Promise<Customer> {
+    return await this.prismaService.customer.update(args);
   }
 
   async findOwnProfile(authenticatedUser: AuthenticatedUser): Promise<CustomerSummary> {
@@ -130,10 +114,7 @@ export class CustomersService {
       );
     }
 
-    const customer = await this.findCustomer(
-      { userId: authenticatedUser.sub },
-      undefined,
-    );
+    const customer = await this.findCustomer({ userId: authenticatedUser.sub });
 
     if (!customer) {
       throw new NotFoundException('Customer não encontrado para este usuário.');
@@ -143,22 +124,12 @@ export class CustomersService {
   }
 
   async findByUserIdOrThrow(userId: string): Promise<CustomerSummary> {
-    const customer = await this.findCustomer({ userId }, undefined);
+    const customer = await this.findCustomer({ userId });
 
     if (!customer) {
       throw new NotFoundException('Customer não encontrado para este usuário.');
     }
 
     return customer;
-  }
-
-  private customerModel(db?: CustomerDbAccessor) {
-    return db?.customer ?? this.prisma.customer;
-  }
-
-  private mapPrismaRoleToProfileType(role: PrismaUserRole): ProfileType {
-    return role === PrismaUserRole.LOCATOR
-      ? ProfileType.COMPANY
-      : ProfileType.CUSTOMER;
   }
 }

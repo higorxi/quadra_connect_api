@@ -1,7 +1,5 @@
 import { Prisma } from '../../../generated/prisma/client/client';
 
-export type UserTransactionClient = Pick<Prisma.TransactionClient, 'user'>;
-
 export type UserFindParams = {
   skip?: number;
   take?: number;

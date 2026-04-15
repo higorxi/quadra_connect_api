@@ -3,7 +3,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '../../generated/prisma/client/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { UserSummary, UserWithRelations } from './interfaces/user-summary.interface';
@@ -17,48 +16,28 @@ import {
   UpdateUserParams,
 } from './types/user-params.type';
 
-type UserDbAccessor = Pick<PrismaService, 'user'>;
-type AuthTransactionAccessor = Pick<PrismaService, 'user' | 'company' | 'customer'>;
-
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
-  async runInTransaction<T>(
-    callback: (db: AuthTransactionAccessor) => Promise<T>,
-  ): Promise<T> {
-    return this.prisma.$transaction(async (tx) => {
-      return callback(tx as AuthTransactionAccessor);
-    });
-  }
-
-  async findUser(
-    data: Prisma.UserWhereInput,
-    db?: UserDbAccessor,
-  ): Promise<UserSummary | null> {
-    const user = await this.findFirst({ where: data }, db);
+  async findUser(data: FindFirstUserParams['where']): Promise<UserSummary | null> {
+    const user = await this.findFirst({ where: data });
     return user ? this.toSummary(user) : null;
   }
 
-  async getUsersBy(
-    params: FindManyUsersParams,
-    db?: UserDbAccessor,
-  ): Promise<UserSummary[]> {
-    const users = await this.findMany(params, db);
+  async getUsersBy(params: FindManyUsersParams): Promise<UserSummary[]> {
+    const users = await this.findMany(params);
     return users.map((user) => this.toSummary(user));
   }
 
-  async listUsers(
-    params: FindManyUsersParams,
-    db?: UserDbAccessor,
-  ): Promise<UserSummary[]> {
-    const users = await this.findMany(params, db);
+  async listUsers(params: FindManyUsersParams): Promise<UserSummary[]> {
+    const users = await this.findMany(params);
     return users.map((user) => this.toSummary(user));
   }
 
-  async findFirst(params: FindFirstUserParams, db?: UserDbAccessor) {
+  async findFirst(params: FindFirstUserParams) {
     const { where, orderBy, include } = params;
-    const user = await this.userModel(db).findFirst({
+    const user = await this.prismaService.user.findFirst({
       where,
       orderBy,
       include,
@@ -66,9 +45,9 @@ export class UsersService {
     return user;
   }
 
-  async findMany(params: FindManyUsersParams, db?: UserDbAccessor) {
+  async findMany(params: FindManyUsersParams) {
     const { skip, take, cursor, where, orderBy, include } = params;
-    const users = await this.userModel(db).findMany({
+    const users = await this.prismaService.user.findMany({
       where,
       skip,
       take,
@@ -79,18 +58,18 @@ export class UsersService {
     return users;
   }
 
-  async createUser(params: CreateUserParams, db?: UserDbAccessor) {
+  async createUser(params: CreateUserParams) {
     const { data, include } = params;
-    const user = await this.userModel(db).create({
+    const user = await this.prismaService.user.create({
       data,
       include,
     });
     return user;
   }
 
-  async updateUser(params: UpdateUserParams, db?: UserDbAccessor) {
+  async updateUser(params: UpdateUserParams) {
     const { where, data, include } = params;
-    const user = await this.userModel(db).update({
+    const user = await this.prismaService.user.update({
       where,
       data,
       include,
@@ -100,7 +79,6 @@ export class UsersService {
 
   async findByEmailWithRelations(
     email: string,
-    db?: UserDbAccessor,
   ): Promise<UserWithRelations | null> {
     const user = await this.findFirst(
       {
@@ -110,7 +88,6 @@ export class UsersService {
           customer: true,
         },
       },
-      db,
     );
 
     return user ? this.toWithRelations(user) : null;
@@ -118,7 +95,6 @@ export class UsersService {
 
   async findByIdWithRelations(
     id: string,
-    db?: UserDbAccessor,
   ): Promise<UserWithRelations | null> {
     const user = await this.findFirst(
       {
@@ -128,7 +104,6 @@ export class UsersService {
           customer: true,
         },
       },
-      db,
     );
 
     return user ? this.toWithRelations(user) : null;
@@ -136,7 +111,6 @@ export class UsersService {
 
   async createAuthUser(
     data: { email: string; password: string; role: UserRole },
-    db?: UserDbAccessor,
   ): Promise<UserWithRelations> {
     const user = await this.createUser(
       {
@@ -146,7 +120,6 @@ export class UsersService {
           customer: true,
         },
       },
-      db,
     );
 
     return this.toWithRelations(user);
@@ -188,10 +161,6 @@ export class UsersService {
 
   async findMe(authenticatedUser: AuthenticatedUser): Promise<UserSummary> {
     return this.findOne(authenticatedUser.sub);
-  }
-
-  private userModel(db?: UserDbAccessor) {
-    return db?.user ?? this.prisma.user;
   }
 
   private toWithRelations(user: {

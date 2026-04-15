@@ -38,60 +38,42 @@ export class AuthService {
 
     const passwordHash = await hash(registerDto.password, 10);
     const role = this.mapProfileTypeToRole(registerDto.profileType);
+    const createdUser = await this.usersService.createAuthUser({
+      email: registerDto.email,
+      password: passwordHash,
+      role,
+    });
 
-    const created = await this.usersService.runInTransaction(
-      async (db): Promise<UserWithIncludes | null> => {
-        const createdUser = await this.usersService.createAuthUser(
-          {
-            email: registerDto.email,
-            password: passwordHash,
-            role,
-          },
-          db,
-        );
+    if (registerDto.profileType === ProfileType.COMPANY) {
+      const company = registerDto.company;
 
-        if (registerDto.profileType === ProfileType.COMPANY) {
-          const company = registerDto.company;
+      if (!company) {
+        throw new BadRequestException('Dados da company são obrigatórios.');
+      }
 
-          if (!company) {
-            throw new BadRequestException('Dados da company são obrigatórios.');
-          }
+      await this.companiesService.createCompany({
+        userId: createdUser.id,
+        name: company.name,
+        cnpj: company.cnpj,
+        phone: company.phone,
+        description: company.description,
+      });
+    } else {
+      const customer = registerDto.customer;
 
-          await this.companiesService.create(
-            {
-              data: {
-                userId: createdUser.id,
-                name: company.name,
-                cnpj: company.cnpj,
-                phone: company.phone,
-                description: company.description,
-              },
-            },
-            db,
-          );
-        } else {
-          const customer = registerDto.customer;
+      if (!customer) {
+        throw new BadRequestException('Dados do customer são obrigatórios.');
+      }
 
-          if (!customer) {
-            throw new BadRequestException('Dados do customer são obrigatórios.');
-          }
+      await this.customersService.createCustomer({
+        userId: createdUser.id,
+        name: customer.name,
+        cpf: customer.cpf,
+        phone: customer.phone,
+      });
+    }
 
-          await this.customersService.create(
-            {
-              data: {
-                userId: createdUser.id,
-                name: customer.name,
-                cpf: customer.cpf,
-                phone: customer.phone,
-              },
-            },
-            db,
-          );
-        }
-
-        return this.usersService.findByIdWithRelations(createdUser.id, db);
-      },
-    );
+    const created = await this.usersService.findByIdWithRelations(createdUser.id);
 
     if (!created) {
       throw new NotFoundException('Usuário recém-criado não foi encontrado.');
