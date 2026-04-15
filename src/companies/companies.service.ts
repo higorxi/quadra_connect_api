@@ -1,26 +1,80 @@
-import { Injectable } from '@nestjs/common';
-import { CreateCompanyDto } from './dto/create-company.dto';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { CompanyEntity } from './entities/company.entity';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 
 @Injectable()
 export class CompaniesService {
-  create(createCompanyDto: CreateCompanyDto) {
-    return 'This action adds a new company';
+  constructor(private readonly prisma: PrismaService) {}
+
+  async findMine(authenticatedUser: AuthenticatedUser): Promise<CompanyEntity> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: authenticatedUser.sub },
+      include: {
+        company: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
+
+    if (!user.company) {
+      throw new ForbiddenException('Usuário não possui company vinculada.');
+    }
+
+    return CompanyEntity.fromPrisma(user.company);
   }
 
-  findAll() {
-    return `This action returns all companies`;
+  async updateMine(
+    authenticatedUser: AuthenticatedUser,
+    updateCompanyDto: UpdateCompanyDto,
+  ): Promise<CompanyEntity> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: authenticatedUser.sub },
+      select: {
+        company: {
+          select: { id: true },
+        },
+      },
+    });
+
+    const companyId = user?.company?.id;
+
+    if (!companyId) {
+      throw new ForbiddenException('Usuário não possui company vinculada.');
+    }
+
+    const updatedCompany = await this.prisma.company.update({
+      where: { id: companyId },
+      data: {
+        name: updateCompanyDto.name,
+        phone: updateCompanyDto.phone,
+        description: updateCompanyDto.description,
+      },
+    });
+
+    return CompanyEntity.fromPrisma(updatedCompany);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} company`;
+  async findAll(): Promise<CompanyEntity[]> {
+    const companies = await this.prisma.company.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return companies.map((company) => CompanyEntity.fromPrisma(company));
   }
 
-  update(id: number, updateCompanyDto: UpdateCompanyDto) {
-    return `This action updates a #${id} company`;
-  }
+  async findOne(id: string): Promise<CompanyEntity> {
+    const company = await this.prisma.company.findUnique({
+      where: { id },
+    });
 
-  remove(id: number) {
-    return `This action removes a #${id} company`;
+    if (!company) {
+      throw new NotFoundException('Company não encontrada.');
+    }
+
+    return CompanyEntity.fromPrisma(company);
   }
 }
