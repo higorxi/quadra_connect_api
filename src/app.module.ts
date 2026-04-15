@@ -8,9 +8,13 @@ import { SpacesModule } from './spaces/spaces.module';
 import { SchedulesModule } from './schedules/schedules.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { CustomersModule } from './customers/customers.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     AuthModule,
     UsersModule,
     CompaniesModule,
