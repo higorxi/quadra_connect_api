@@ -16,10 +16,11 @@ describe('AuthService', () => {
         {
           provide: UsersService,
           useValue: {
-            findFirst: jest.fn(),
-            createUser: jest.fn(),
-            findById: jest.fn(),
-            findByEmailWithPassword: jest.fn(),
+            findByEmail: jest.fn(),
+            runInTransaction: jest.fn(),
+            createAuthUser: jest.fn(),
+            findByIdWithRelations: jest.fn(),
+            findByEmailWithRelations: jest.fn(),
           },
         },
         {

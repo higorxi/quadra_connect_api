@@ -16,8 +16,7 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { UsersService } from '../users/users.service';
 import { CompaniesService } from '../companies/companies.service';
 import { CustomersService } from '../customers/customers.service';
-import { UserWithRelations } from '../users/interfaces/user-summary.interface';
-import { Prisma } from '../../generated/prisma/client/client';
+import { UserWithIncludes } from '../users/interfaces/user-summary.interface';
 
 @Injectable()
 export class AuthService {
@@ -41,7 +40,7 @@ export class AuthService {
     const role = this.mapProfileTypeToRole(registerDto.profileType);
 
     const created = await this.usersService.runInTransaction(
-      async (db): Promise<UserWithRelations | null> => {
+      async (db): Promise<UserWithIncludes | null> => {
         const createdUser = await this.usersService.createAuthUser(
           {
             email: registerDto.email,
@@ -127,7 +126,7 @@ export class AuthService {
     return this.buildAuthResponse(user).user;
   }
 
-  private buildAuthResponse(user: UserWithRelations): AuthResponseDto {
+  private buildAuthResponse(user: UserWithIncludes): AuthResponseDto {
     const profileType = this.mapRoleToProfileType(user.role);
 
     const payload: JwtPayload = {

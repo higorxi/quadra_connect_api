@@ -4,38 +4,105 @@ import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interfa
 import { CompanySummary } from './interfaces/company-summary.interface';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { Prisma } from '../../generated/prisma/client/client';
+import { FindCompanyParams } from './types/company-params.type';
 
 type CompanyDbAccessor = Pick<PrismaService, 'company'>;
 
 @Injectable()
 export class CompaniesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) {}
+
+  async getCompaniesBy(params: FindCompanyParams): Promise<CompanySummary[]> {
+    const { skip, take, cursor, where, orderBy } = params;
+    const companies = await this.prismaService.company.findMany({
+      where,
+      skip,
+      take,
+      cursor,
+      orderBy,
+    });
+    return companies.map((company) => this.toSummary(company));
+  }
+
+  async listCompanies(params: FindCompanyParams): Promise<CompanySummary[]> {
+    const { skip, take, cursor, where, orderBy } = params;
+    const companies = await this.prismaService.company.findMany({
+      where,
+      skip,
+      take,
+      cursor,
+      orderBy,
+    });
+    return companies.map((company) => this.toSummary(company));
+  }
+
+  async findCompany(data: Prisma.CompanyWhereInput): Promise<CompanySummary | null> {
+    const company = await this.prismaService.company.findFirst({
+      where: data,
+    });
+    return company ? this.toSummary(company) : null;
+  }
+
+  async createCompany(
+    data: Prisma.CompanyUncheckedCreateInput,
+  ): Promise<CompanySummary> {
+    const company = await this.prismaService.company.create({
+      data,
+    });
+    return this.toSummary(company);
+  }
+
+  async updateCompany(params: {
+    where: Prisma.CompanyWhereUniqueInput;
+    data: Prisma.CompanyUncheckedUpdateInput;
+  }): Promise<CompanySummary> {
+    const { where, data } = params;
+    const company = await this.prismaService.company.update({
+      where,
+      data,
+    });
+    return this.toSummary(company);
+  }
+
+  async updateManyCompanies(params: {
+    where: Prisma.CompanyWhereInput;
+    data: Prisma.CompanyUpdateManyMutationInput;
+  }): Promise<Prisma.BatchPayload> {
+    const { where, data } = params;
+    return await this.prismaService.company.updateMany({
+      where,
+      data,
+    });
+  }
+
+  async deleteCompany(where: Prisma.CompanyWhereUniqueInput): Promise<CompanySummary> {
+    const company = await this.prismaService.company.delete({
+      where,
+    });
+    return this.toSummary(company);
+  }
 
   async findMine(authenticatedUser: AuthenticatedUser): Promise<CompanySummary> {
-    const company = await this.findFirst({
-      where: { userId: authenticatedUser.sub },
-    });
+    const company = await this.findCompany({ userId: authenticatedUser.sub });
 
     if (!company) {
       throw new ForbiddenException('Usuário não possui company vinculada.');
     }
 
-    return this.toSummary(company);
+    return company;
   }
 
   async updateMine(
     authenticatedUser: AuthenticatedUser,
     updateCompanyDto: UpdateCompanyDto,
   ): Promise<CompanySummary> {
-    const company = await this.findFirst({
-      where: { userId: authenticatedUser.sub },
-    });
+    const company = await this.findCompany({ userId: authenticatedUser.sub });
 
     if (!company) {
       throw new ForbiddenException('Usuário não possui company vinculada.');
     }
 
-    const updatedCompany = await this.update({
+    const updatedCompany = await this.updateCompany({
       where: { id: company.id },
       data: {
         name: updateCompanyDto.name,
@@ -43,48 +110,33 @@ export class CompaniesService {
         description: updateCompanyDto.description,
       },
     });
+    return updatedCompany;
+  }
 
-    return this.toSummary(updatedCompany);
+  async create(
+    params: { data: Prisma.CompanyUncheckedCreateInput },
+    db?: CompanyDbAccessor,
+  ): Promise<CompanySummary> {
+    const company = await (db?.company ?? this.prismaService.company).create({
+      data: params.data,
+    });
+    return this.toSummary(company);
   }
 
   async findAll(): Promise<CompanySummary[]> {
-    const companies = await this.findMany({
+    const companies = await this.getCompaniesBy({
       orderBy: { createdAt: 'desc' },
     });
-
-    return companies.map((company) => this.toSummary(company));
+    return companies;
   }
 
   async findOne(id: string): Promise<CompanySummary> {
-    const company = await this.findFirst({
-      where: { id },
-    });
+    const company = await this.findCompany({ id });
 
     if (!company) {
       throw new NotFoundException('Company não encontrada.');
     }
-
-    return this.toSummary(company);
-  }
-
-  async findFirst(args: Prisma.CompanyFindFirstArgs, db?: CompanyDbAccessor) {
-    return this.companyModel(db).findFirst(args);
-  }
-
-  async findMany(args: Prisma.CompanyFindManyArgs, db?: CompanyDbAccessor) {
-    return this.companyModel(db).findMany(args);
-  }
-
-  async create(args: Prisma.CompanyCreateArgs, db?: CompanyDbAccessor) {
-    return this.companyModel(db).create(args);
-  }
-
-  async update(args: Prisma.CompanyUpdateArgs, db?: CompanyDbAccessor) {
-    return this.companyModel(db).update(args);
-  }
-
-  private companyModel(db?: CompanyDbAccessor) {
-    return db?.company ?? this.prisma.company;
+    return company;
   }
 
   private toSummary(company: {

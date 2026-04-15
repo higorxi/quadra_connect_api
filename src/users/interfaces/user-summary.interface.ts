@@ -12,7 +12,7 @@ export interface UserSummary {
   updatedAt: Date;
 }
 
-export interface UserWithRelations {
+export interface UserWithIncludes {
   id: string;
   email: string | null;
   role: UserRole;
@@ -22,3 +22,5 @@ export interface UserWithRelations {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type UserWithRelations = UserWithIncludes;

@@ -9,3 +9,5 @@ export interface CompanySummary {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type CompanyWithIncludes = CompanySummary;

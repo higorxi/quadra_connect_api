@@ -10,6 +10,12 @@ import { UserSummary, UserWithRelations } from './interfaces/user-summary.interf
 import { CreateUserDto } from './dto/create-user.dto';
 import { ProfileType } from '../common/enums/profile-type.enum';
 import { UserRole } from '../common/enums/user-role.enum';
+import {
+  CreateUserParams,
+  FindFirstUserParams,
+  FindManyUsersParams,
+  UpdateUserParams,
+} from './types/user-params.type';
 
 type UserDbAccessor = Pick<PrismaService, 'user'>;
 type AuthTransactionAccessor = Pick<PrismaService, 'user' | 'company' | 'customer'>;
@@ -26,23 +32,69 @@ export class UsersService {
     });
   }
 
-  async findFirst(args: Prisma.UserFindFirstArgs, db?: UserDbAccessor) {
-    const user = await this.userModel(db).findFirst(args);
+  async findUser(
+    data: Prisma.UserWhereInput,
+    db?: UserDbAccessor,
+  ): Promise<UserSummary | null> {
+    const user = await this.findFirst({ where: data }, db);
+    return user ? this.toSummary(user) : null;
+  }
+
+  async getUsersBy(
+    params: FindManyUsersParams,
+    db?: UserDbAccessor,
+  ): Promise<UserSummary[]> {
+    const users = await this.findMany(params, db);
+    return users.map((user) => this.toSummary(user));
+  }
+
+  async listUsers(
+    params: FindManyUsersParams,
+    db?: UserDbAccessor,
+  ): Promise<UserSummary[]> {
+    const users = await this.findMany(params, db);
+    return users.map((user) => this.toSummary(user));
+  }
+
+  async findFirst(params: FindFirstUserParams, db?: UserDbAccessor) {
+    const { where, orderBy, include } = params;
+    const user = await this.userModel(db).findFirst({
+      where,
+      orderBy,
+      include,
+    });
     return user;
   }
 
-  async findMany(args?: Prisma.UserFindManyArgs, db?: UserDbAccessor) {
-    const users = await this.userModel(db).findMany(args);
+  async findMany(params: FindManyUsersParams, db?: UserDbAccessor) {
+    const { skip, take, cursor, where, orderBy, include } = params;
+    const users = await this.userModel(db).findMany({
+      where,
+      skip,
+      take,
+      cursor,
+      orderBy,
+      include,
+    });
     return users;
   }
 
-  async create(args: Prisma.UserCreateArgs, db?: UserDbAccessor) {
-    const user = await this.userModel(db).create(args);
+  async createUser(params: CreateUserParams, db?: UserDbAccessor) {
+    const { data, include } = params;
+    const user = await this.userModel(db).create({
+      data,
+      include,
+    });
     return user;
   }
 
-  async update(args: Prisma.UserUpdateArgs, db?: UserDbAccessor) {
-    const user = await this.userModel(db).update(args);
+  async updateUser(params: UpdateUserParams, db?: UserDbAccessor) {
+    const { where, data, include } = params;
+    const user = await this.userModel(db).update({
+      where,
+      data,
+      include,
+    });
     return user;
   }
 
@@ -86,7 +138,7 @@ export class UsersService {
     data: { email: string; password: string; role: UserRole },
     db?: UserDbAccessor,
   ): Promise<UserWithRelations> {
-    const user = await this.create(
+    const user = await this.createUser(
       {
         data,
         include: {
@@ -101,33 +153,11 @@ export class UsersService {
   }
 
   async findByEmail(email: string): Promise<UserSummary | null> {
-    const user = await this.findFirst(
-      {
-        where: { email },
-        include: {
-          company: true,
-          customer: true,
-        },
-      },
-      undefined,
-    );
-
-    return user ? this.toSummary(user) : null;
+    return this.findUser({ email });
   }
 
   async findById(id: string): Promise<UserSummary | null> {
-    const user = await this.findFirst(
-      {
-        where: { id },
-        include: {
-          company: true,
-          customer: true,
-        },
-      },
-      undefined,
-    );
-
-    return user ? this.toSummary(user) : null;
+    return this.findUser({ id });
   }
 
   createFromUsersModule(createUserDto: CreateUserDto): never {
@@ -137,15 +167,13 @@ export class UsersService {
   }
 
   async findAll(): Promise<UserSummary[]> {
-    const users = await this.findMany({
+    return this.listUsers({
+      orderBy: { createdAt: 'desc' },
       include: {
         company: true,
         customer: true,
       },
-      orderBy: { createdAt: 'desc' },
     });
-
-    return users.map((user) => this.toSummary(user));
   }
 
   async findOne(id: string): Promise<UserSummary> {
