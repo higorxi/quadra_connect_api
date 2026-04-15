@@ -12,8 +12,8 @@ describe('CompaniesController', () => {
         {
           provide: CompaniesService,
           useValue: {
-            findMine: jest.fn(),
-            updateMine: jest.fn(),
+            findCompanyByUserId: jest.fn(),
+            updateCompanyByUserId: jest.fn(),
           },
         },
       ],

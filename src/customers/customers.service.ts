@@ -1,11 +1,10 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   Customer,
   Prisma,
 } from '../../generated/prisma/client/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
-import { ProfileType } from '../common/enums/profile-type.enum';
 import { CustomerSummary } from './interfaces/customer-summary.interface';
 
 @Injectable()
@@ -108,12 +107,6 @@ export class CustomersService {
   }
 
   async findOwnProfile(authenticatedUser: AuthenticatedUser): Promise<CustomerSummary> {
-    if (authenticatedUser.profileType !== ProfileType.CUSTOMER) {
-      throw new ForbiddenException(
-        'Apenas usuários customer podem acessar este endpoint.',
-      );
-    }
-
     const customer = await this.findCustomer({ userId: authenticatedUser.sub });
 
     if (!customer) {

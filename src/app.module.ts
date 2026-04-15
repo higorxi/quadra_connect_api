@@ -4,11 +4,15 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { CompaniesModule } from './companies/companies.module';
-import { SpacesModule } from './spaces/spaces.module';
-import { SchedulesModule } from './schedules/schedules.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { CustomersModule } from './customers/customers.module';
 import { ConfigModule } from '@nestjs/config';
+import { CategoriesModule } from './categories/categories.module';
+import { UnitsModule } from './units/units.module';
+import { ReservationsModule } from './reservations/reservations.module';
+import { CommunitiesModule } from './communities/communities.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { TransactionsModule } from './transactions/transactions.module';
 
 @Module({
   imports: [
@@ -18,8 +22,12 @@ import { ConfigModule } from '@nestjs/config';
     AuthModule,
     UsersModule,
     CompaniesModule,
-    SpacesModule,
-    SchedulesModule,
+    CategoriesModule,
+    UnitsModule,
+    ReservationsModule,
+    CommunitiesModule,
+    ReviewsModule,
+    TransactionsModule,
     PrismaModule,
     CustomersModule,
   ],
