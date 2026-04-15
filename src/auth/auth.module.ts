@@ -19,9 +19,13 @@ const jwtExpiresIn = (process.env.JWT_EXPIRES_IN ?? '1d') as SignOptions['expire
     CompaniesModule,
     CustomersModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({
-      secret: process.env.JWT_SECRET ?? 'dev-secret',
-      signOptions: { expiresIn: jwtExpiresIn },
+    JwtModule.registerAsync({
+      useFactory: () => ({
+        secret: process.env.JWT_SECRET ?? 'dev-secret',
+        signOptions: {
+          expiresIn: (process.env.JWT_EXPIRES_IN ?? '1d') as SignOptions['expiresIn'],
+        },
+      }),
     }),
   ],
   providers: [AuthService, JwtStrategy],
