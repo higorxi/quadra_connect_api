@@ -1,20 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { CompaniesService } from './companies.service';
+import { CustomersService } from './customers.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-describe('CompaniesService', () => {
-  let service: CompaniesService;
+describe('CustomersService', () => {
+  let service: CustomersService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        CompaniesService,
+        CustomersService,
         {
           provide: PrismaService,
           useValue: {
-            company: {
-              findMany: jest.fn(),
+            customer: {
               findFirst: jest.fn(),
+              findMany: jest.fn(),
               create: jest.fn(),
               update: jest.fn(),
             },
@@ -23,7 +23,7 @@ describe('CompaniesService', () => {
       ],
     }).compile();
 
-    service = module.get<CompaniesService>(CompaniesService);
+    service = module.get<CustomersService>(CustomersService);
   });
 
   it('should be defined', () => {
