@@ -4,6 +4,13 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  
+  app.enableCors({
+    origin: ['http://localhost:5174'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -12,5 +19,6 @@ async function bootstrap() {
     }),
   );
   await app.listen(process.env.BACKEND_PORT ?? 3000);
+  console.log(`Server is running on port ${process.env.BACKEND_PORT ?? 3000}`);
 }
 void bootstrap();
