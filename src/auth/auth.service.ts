@@ -156,7 +156,11 @@ export class AuthService {
       return ProfileType.COMPANY;
     }
 
-    return ProfileType.CUSTOMER;
+    if (role === UserRole.CUSTOMER) {
+      return ProfileType.CUSTOMER;
+    }
+
+    return ProfileType.ADMIN;
   }
 
   private validateRegisterPayload(registerDto: RegisterUserDto): void {
