@@ -14,6 +14,7 @@ describe('TransactionsController', () => {
           useValue: {
             create: jest.fn(),
             findMine: jest.fn(),
+            findForCompany: jest.fn(),
             findOne: jest.fn(),
             updateStatus: jest.fn(),
           },

@@ -37,6 +37,12 @@ export class TransactionsController {
     return this.transactionsService.findMine(user);
   }
 
+  @Get('company')
+  @AllowedProfiles(ProfileType.COMPANY)
+  async findForCompany(@CurrentUser() user: AuthenticatedUser) {
+    return this.transactionsService.findForCompany(user);
+  }
+
   @Get(':id')
   async findOne(
     @CurrentUser() user: AuthenticatedUser,

@@ -20,4 +20,14 @@ export class CreateTransactionDto {
   @IsString()
   @IsNotEmpty()
   pixCode?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  reservationId?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  companyId?: string;
 }

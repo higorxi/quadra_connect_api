@@ -6,6 +6,8 @@ import {
 export interface TransactionSummary {
   id: string;
   customerId: string;
+  companyId: string | null;
+  reservationId: string | null;
   amount: string;
   type: TransactionType;
   status: TransactionStatus;
