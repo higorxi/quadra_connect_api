@@ -10,6 +10,7 @@ import { CompaniesService } from '../companies/companies.service';
 import { CustomersService } from '../customers/customers.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { CompanyReviewSummary } from './interfaces/company-review-summary.interface';
 import { ReviewSummary } from './interfaces/review-summary.interface';
 
 @Injectable()
@@ -106,6 +107,48 @@ export class ReviewsService {
     });
 
     return review ? this.toSummary(review) : null;
+  }
+
+  async findForCompany(
+    authenticatedUser: AuthenticatedUser,
+  ): Promise<CompanyReviewSummary[]> {
+    const company = await this.companiesService.findCompanyByUserId(
+      authenticatedUser.sub,
+    );
+
+    const reviews = await this.prismaService.review.findMany({
+      where: {
+        unit: {
+          companyId: company.id,
+        },
+      },
+      select: {
+        id: true,
+        reservationId: true,
+        unitId: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
+        updatedAt: true,
+        reservation: {
+          select: {
+            id: true,
+            startTime: true,
+            endTime: true,
+            status: true,
+          },
+        },
+        unit: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return reviews;
   }
 
   private toSummary(review: {

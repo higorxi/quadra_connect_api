@@ -14,6 +14,7 @@ describe('ReviewsController', () => {
           useValue: {
             create: jest.fn(),
             findByReservation: jest.fn(),
+            findForCompany: jest.fn(),
           },
         },
       ],

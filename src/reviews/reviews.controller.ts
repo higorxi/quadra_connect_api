@@ -29,4 +29,10 @@ export class ReviewsController {
   ) {
     return this.reviewsService.findByReservation(user, reservationId);
   }
+
+  @Get('company')
+  @AllowedProfiles(ProfileType.COMPANY)
+  async findForCompany(@CurrentUser() user: AuthenticatedUser) {
+    return this.reviewsService.findForCompany(user);
+  }
 }
