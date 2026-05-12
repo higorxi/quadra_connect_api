@@ -144,7 +144,11 @@ export class AuthService {
       return UserRole.LOCATOR;
     }
 
-    return UserRole.CUSTOMER;
+    if (profileType === ProfileType.CUSTOMER) {
+      return UserRole.CUSTOMER;
+    }
+
+    return UserRole.ADMIN;
   }
 
   private mapRoleToProfileType(role: UserRole): ProfileType {
