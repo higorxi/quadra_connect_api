@@ -13,6 +13,7 @@ import { ReservationsModule } from './reservations/reservations.module';
 import { CommunitiesModule } from './communities/communities.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { TransactionsModule } from './transactions/transactions.module';
+import { StatisticsModule } from './statistics/statistics.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { TransactionsModule } from './transactions/transactions.module';
     CommunitiesModule,
     ReviewsModule,
     TransactionsModule,
+    StatisticsModule,
     PrismaModule,
     CustomersModule,
   ],

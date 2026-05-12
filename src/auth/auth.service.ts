@@ -144,7 +144,11 @@ export class AuthService {
       return UserRole.LOCATOR;
     }
 
-    return UserRole.CUSTOMER;
+    if (profileType === ProfileType.CUSTOMER) {
+      return UserRole.CUSTOMER;
+    }
+
+    return UserRole.ADMIN;
   }
 
   private mapRoleToProfileType(role: UserRole): ProfileType {
@@ -152,7 +156,11 @@ export class AuthService {
       return ProfileType.COMPANY;
     }
 
-    return ProfileType.CUSTOMER;
+    if (role === UserRole.CUSTOMER) {
+      return ProfileType.CUSTOMER;
+    }
+
+    return ProfileType.ADMIN;
   }
 
   private validateRegisterPayload(registerDto: RegisterUserDto): void {
