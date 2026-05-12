@@ -22,7 +22,7 @@ export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Post()
-  @AllowedProfiles(ProfileType.COMPANY)
+  @AllowedProfiles(ProfileType.ADMIN)
   async create(@Body() createCategoryDto: CreateCategoryDto) {
     return this.categoriesService.create(createCategoryDto);
   }
@@ -38,7 +38,7 @@ export class CategoriesController {
   }
 
   @Patch(':id')
-  @AllowedProfiles(ProfileType.COMPANY)
+  @AllowedProfiles(ProfileType.ADMIN)
   async update(
     @Param('id') id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
@@ -47,7 +47,7 @@ export class CategoriesController {
   }
 
   @Delete(':id')
-  @AllowedProfiles(ProfileType.COMPANY)
+  @AllowedProfiles(ProfileType.ADMIN)
   async remove(@Param('id') id: string) {
     return this.categoriesService.remove(id);
   }
