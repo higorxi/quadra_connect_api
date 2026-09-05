@@ -17,6 +17,11 @@ import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { ReservationSummary } from './interfaces/reservation-summary.interface';
 
+const reservationRelations = {
+  unit: { select: { companyId: true, name: true } },
+  customer: { select: { name: true } },
+};
+
 @Injectable()
 export class ReservationsService {
   constructor(
@@ -92,6 +97,7 @@ export class ReservationsService {
         bailPaid: createReservationDto.bailPaid ?? false,
         isSplit: createReservationDto.isSplit ?? false,
       },
+      include: reservationRelations,
     });
 
     return this.toSummary(reservation);
@@ -105,6 +111,7 @@ export class ReservationsService {
     );
     const reservations = await this.prismaService.reservation.findMany({
       where: { customerId: customer.id },
+      include: reservationRelations,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -124,6 +131,7 @@ export class ReservationsService {
           companyId: company.id,
         },
       },
+      include: reservationRelations,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -136,11 +144,7 @@ export class ReservationsService {
   ): Promise<ReservationSummary> {
     const reservation = await this.prismaService.reservation.findUnique({
       where: { id: reservationId },
-      include: {
-        unit: {
-          select: { companyId: true },
-        },
-      },
+      include: reservationRelations,
     });
 
     if (!reservation) {
@@ -216,6 +220,7 @@ export class ReservationsService {
         status: updateReservationDto.status,
         bailPaid: updateReservationDto.bailPaid,
       },
+      include: reservationRelations,
     });
     return this.toSummary(updatedReservation);
   }
@@ -237,6 +242,8 @@ export class ReservationsService {
     id: string;
     customerId: string;
     unitId: string;
+    customer?: { name: string } | null;
+    unit?: { name?: string } | null;
     startTime: Date;
     endTime: Date;
     status: ReservationStatus;
@@ -249,7 +256,9 @@ export class ReservationsService {
     return {
       id: reservation.id,
       customerId: reservation.customerId,
+      customerName: reservation.customer?.name ?? null,
       unitId: reservation.unitId,
+      unitName: reservation.unit?.name ?? null,
       startTime: reservation.startTime,
       endTime: reservation.endTime,
       status: reservation.status,

@@ -14,6 +14,7 @@ import { CommunitiesModule } from './communities/communities.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { StatisticsModule } from './statistics/statistics.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { StatisticsModule } from './statistics/statistics.module';
     ReviewsModule,
     TransactionsModule,
     StatisticsModule,
+    ReportsModule,
     PrismaModule,
     CustomersModule,
   ],

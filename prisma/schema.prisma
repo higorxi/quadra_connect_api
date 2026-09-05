@@ -35,6 +35,20 @@ enum TransactionStatus {
   FAILED
 }
 
+enum ReportModule {
+  RESERVATIONS
+  TRANSACTIONS
+  REVIEWS
+  UNITS
+}
+
+enum ReportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 model User {
   id            String   @id @default(uuid())
   email         String?  @unique
@@ -67,6 +81,7 @@ model Company {
   user  User   @relation(fields: [userId], references: [id])
   units Unit[]
   transactions Transaction[]
+  reports Report[]
 
   @@map("companies")
 }
@@ -239,4 +254,25 @@ model Transaction {
   @@index([companyId])
   @@index([reservationId])
   @@map("transactions")
+}
+
+model Report {
+  id          String       @id @default(uuid())
+  companyId   String       @map("company_id")
+  module      ReportModule
+  status      ReportStatus @default(PENDING)
+  filters     Json         @default("{}")
+  startDate   DateTime?    @map("start_date")
+  endDate     DateTime?    @map("end_date")
+  rowCount    Int?         @map("row_count")
+  result      Json?
+  error       String?
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  completedAt DateTime?    @map("completed_at")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, createdAt])
+  @@map("reports")
 }

@@ -17,6 +17,16 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionStatusDto } from './dto/update-transaction-status.dto';
 import { TransactionSummary } from './interfaces/transaction-summary.interface';
 
+const transactionRelationsInclude = {
+  customer: { select: { name: true } },
+  reservation: {
+    select: {
+      startTime: true,
+      unit: { select: { companyId: true, name: true } },
+    },
+  },
+};
+
 @Injectable()
 export class TransactionsService {
   constructor(
@@ -38,6 +48,7 @@ export class TransactionsService {
     );
 
     const transaction = await this.prismaService.transaction.create({
+      include: transactionRelationsInclude,
       data: {
         customerId: customer.id,
         companyId: transactionRelations.companyId,
@@ -60,6 +71,7 @@ export class TransactionsService {
     );
     const transactions = await this.prismaService.transaction.findMany({
       where: { customerId: customer.id },
+      include: transactionRelationsInclude,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -86,6 +98,7 @@ export class TransactionsService {
           },
         ],
       },
+      include: transactionRelationsInclude,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -98,17 +111,7 @@ export class TransactionsService {
   ): Promise<TransactionSummary> {
     const transaction = await this.prismaService.transaction.findUnique({
       where: { id: transactionId },
-      include: {
-        reservation: {
-          select: {
-            unit: {
-              select: {
-                companyId: true,
-              },
-            },
-          },
-        },
-      },
+      include: transactionRelationsInclude,
     });
 
     if (!transaction) {
@@ -127,17 +130,7 @@ export class TransactionsService {
   ): Promise<TransactionSummary> {
     const transaction = await this.prismaService.transaction.findUnique({
       where: { id: transactionId },
-      include: {
-        reservation: {
-          select: {
-            unit: {
-              select: {
-                companyId: true,
-              },
-            },
-          },
-        },
-      },
+      include: transactionRelationsInclude,
     });
 
     if (!transaction) {
@@ -157,6 +150,7 @@ export class TransactionsService {
       data: {
         status: updateTransactionStatusDto.status,
       },
+      include: transactionRelationsInclude,
     });
 
     return this.toSummary(updatedTransaction);
@@ -277,6 +271,11 @@ export class TransactionsService {
   private toSummary(transaction: {
     id: string;
     customerId: string;
+    customer?: { name: string } | null;
+    reservation?: {
+      startTime?: Date;
+      unit?: { name?: string };
+    } | null;
     companyId: string | null;
     reservationId: string | null;
     amount: Prisma.Decimal;
@@ -289,8 +288,11 @@ export class TransactionsService {
     return {
       id: transaction.id,
       customerId: transaction.customerId,
+      customerName: transaction.customer?.name ?? null,
       companyId: transaction.companyId,
       reservationId: transaction.reservationId,
+      reservationUnitName: transaction.reservation?.unit?.name ?? null,
+      reservationStartTime: transaction.reservation?.startTime ?? null,
       amount: transaction.amount.toString(),
       type: transaction.type,
       status: transaction.status,
