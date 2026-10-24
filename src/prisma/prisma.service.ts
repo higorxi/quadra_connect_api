@@ -11,6 +11,7 @@ export class PrismaService
     super({
       adapter: new PrismaPg({
         connectionString: process.env.DATABASE_URL,
+        max: 2, // ponytail: poucas conexões por instância Lambda; pooler do Supabase é limitado
       }),
     });
   }
