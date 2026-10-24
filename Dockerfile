@@ -8,7 +8,7 @@ RUN yarn build && yarn install --frozen-lockfile --production
 
 FROM node:20-slim
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
-COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.1 /lambda-adapter /opt/extensions/lambda-adapter
+COPY --from=828153030828.dkr.ecr.us-east-1.amazonaws.com/lwa:0.9.1 /lambda-adapter /opt/extensions/lambda-adapter
 WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
