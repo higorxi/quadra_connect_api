@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { AllowedProfiles } from '../auth/decorators/allowed-profiles.decorator';
@@ -14,6 +15,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ProfileAccessGuard } from '../auth/guards/profile-access.guard';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { ProfileType } from '../common/enums/profile-type.enum';
+import { AvailabilityQueryDto } from './dto/availability-query.dto';
 import { CreateUnitDto } from './dto/create-unit.dto';
 import { UpdateUnitDto } from './dto/update-unit.dto';
 import { UnitsService } from './units.service';
@@ -41,6 +43,14 @@ export class UnitsController {
   @AllowedProfiles(ProfileType.COMPANY)
   async findMine(@CurrentUser() user: AuthenticatedUser) {
     return this.unitsService.findByCompany(user);
+  }
+
+  @Get(':id/availability')
+  async findAvailability(
+    @Param('id') id: string,
+    @Query() query: AvailabilityQueryDto,
+  ) {
+    return this.unitsService.findAvailability(id, query);
   }
 
   @Get(':id')
