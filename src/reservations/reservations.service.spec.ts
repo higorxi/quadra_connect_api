@@ -53,6 +53,7 @@ function buildReservationRow(overrides: Record<string, unknown> = {}) {
 describe('ReservationsService', () => {
   let service: ReservationsService;
   let prisma: {
+    $transaction: jest.Mock;
     unit: { findUnique: jest.Mock };
     reservation: {
       findFirst: jest.Mock;
@@ -74,6 +75,7 @@ describe('ReservationsService', () => {
 
   beforeEach(async () => {
     prisma = {
+      $transaction: jest.fn(),
       unit: { findUnique: jest.fn().mockResolvedValue(unit) },
       reservation: {
         findFirst: jest.fn().mockResolvedValue(null),
@@ -82,6 +84,9 @@ describe('ReservationsService', () => {
         update: jest.fn(),
       },
     };
+    prisma.$transaction.mockImplementation(
+      (callback: (tx: unknown) => unknown) => callback(prisma),
+    );
     customersService = {
       findByUserIdOrThrow: jest.fn().mockResolvedValue({ id: CUSTOMER_ID }),
     };
@@ -162,6 +167,32 @@ describe('ReservationsService', () => {
       ]);
       expect(where.startTime).toEqual({ lt: new Date(dto.endTime) });
       expect(where.endTime).toEqual({ gt: new Date(dto.startTime) });
+    });
+
+    it('executa a verificação e a criação em transação SERIALIZABLE', async () => {
+      prisma.reservation.create.mockImplementation(({ data }) =>
+        Promise.resolve(buildReservationRow(data)),
+      );
+
+      await service.create(customerUser, dto);
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(prisma.$transaction.mock.calls[0][1]).toEqual({
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      });
+    });
+
+    it('trata falha de serialização (P2034) como conflito de horário', async () => {
+      prisma.$transaction.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('conflito de escrita', {
+          code: 'P2034',
+          clientVersion: 'test',
+        }),
+      );
+
+      await expect(service.create(customerUser, dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('rejeita quando a unidade não existe', async () => {
