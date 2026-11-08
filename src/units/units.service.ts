@@ -4,12 +4,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '../../generated/prisma/client/client';
+import {
+  Prisma,
+  ReservationStatus,
+} from '../../generated/prisma/client/client';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { CompaniesService } from '../companies/companies.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUnitDto } from './dto/create-unit.dto';
+import { AvailabilityQueryDto } from './dto/availability-query.dto';
 import { UpdateUnitDto } from './dto/update-unit.dto';
+import { UnitAvailability } from './interfaces/unit-availability.interface';
 import { UnitSummary } from './interfaces/unit-summary.interface';
 
 @Injectable()
@@ -78,6 +83,53 @@ export class UnitsService {
     }
 
     return this.toSummary(unit);
+  }
+
+  async findAvailability(
+    id: string,
+    query: AvailabilityQueryDto,
+  ): Promise<UnitAvailability> {
+    const from = new Date(query.from);
+    const to = new Date(query.to);
+
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+      throw new BadRequestException('Período inválido.');
+    }
+
+    if (to <= from) {
+      throw new BadRequestException(
+        'O fim do período deve ser maior que o início.',
+      );
+    }
+
+    const maxRangeMs = 31 * 24 * 60 * 60 * 1000;
+    if (to.getTime() - from.getTime() > maxRangeMs) {
+      throw new BadRequestException('O período máximo de consulta é 31 dias.');
+    }
+
+    const unit = await this.prismaService.unit.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!unit) {
+      throw new NotFoundException('Unidade não encontrada.');
+    }
+
+    const reservations = await this.prismaService.reservation.findMany({
+      where: {
+        unitId: id,
+        status: {
+          in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+        },
+        startTime: { lt: to },
+        endTime: { gt: from },
+      },
+      select: { startTime: true, endTime: true, status: true },
+      orderBy: { startTime: 'asc' },
+    });
+
+    return { unitId: id, from, to, busy: reservations };
   }
 
   async update(
