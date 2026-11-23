@@ -1,4 +1,4 @@
-name: Code Quality (Lint & Format)
+name: Code Quality (Lint, Format & Tests)
 
 on:
   push:
@@ -29,3 +29,12 @@ jobs:
 
       - name: Rodar ESLint
         run: yarn lint
+
+      # prisma generate precisa de uma URL válida, mas não conecta ao banco
+      - name: Gerar Prisma Client
+        run: yarn prisma:generate
+        env:
+          DATABASE_URL: postgresql://user:pass@localhost:5432/db
+
+      - name: Rodar testes (Jest)
+        run: yarn test --ci
