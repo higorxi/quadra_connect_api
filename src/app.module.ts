@@ -7,6 +7,8 @@ import { CompaniesModule } from './companies/companies.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { CustomersModule } from './customers/customers.module';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { CategoriesModule } from './categories/categories.module';
 import { UnitsModule } from './units/units.module';
 import { ReservationsModule } from './reservations/reservations.module';
@@ -21,6 +23,8 @@ import { ReportsModule } from './reports/reports.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    // Limite geral por IP; rotas sensíveis (login/cadastro) têm limite próprio
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     AuthModule,
     UsersModule,
     CompaniesModule,
@@ -36,6 +40,6 @@ import { ReportsModule } from './reports/reports.module';
     CustomersModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
