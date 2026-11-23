@@ -58,49 +58,66 @@ export class ReservationsService {
       );
     }
 
-    const overlappingReservation =
-      await this.prismaService.reservation.findFirst({
-        where: {
-          unitId: unit.id,
-          status: {
-            in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
-          },
-          startTime: { lt: endTime },
-          endTime: { gt: startTime },
-        },
-        select: { id: true },
-      });
-
-    if (overlappingReservation) {
-      throw new BadRequestException(
-        'Já existe uma reserva para essa unidade no período informado.',
-      );
-    }
-
     const computedTotalPrice = this.computeTotalPrice(
       startTime,
       endTime,
       unit.pricePerHour,
     );
     const totalPrice = createReservationDto.totalPrice ?? computedTotalPrice;
+    const conflictMessage =
+      'Já existe uma reserva para essa unidade no período informado.';
 
-    const reservation = await this.prismaService.reservation.create({
-      data: {
-        customerId: customer.id,
-        unitId: unit.id,
-        startTime,
-        endTime,
-        status: unit.requiresConfirmation
-          ? ReservationStatus.PENDING
-          : ReservationStatus.CONFIRMED,
-        totalPrice,
-        bailPaid: createReservationDto.bailPaid ?? false,
-        isSplit: createReservationDto.isSplit ?? false,
-      },
-      include: reservationRelations,
-    });
+    // Verificação de conflito e criação na mesma transação SERIALIZABLE:
+    // duas reservas simultâneas para o mesmo horário não passam juntas.
+    try {
+      const reservation = await this.prismaService.$transaction(
+        async (tx) => {
+          const overlappingReservation = await tx.reservation.findFirst({
+            where: {
+              unitId: unit.id,
+              status: {
+                in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+              },
+              startTime: { lt: endTime },
+              endTime: { gt: startTime },
+            },
+            select: { id: true },
+          });
 
-    return this.toSummary(reservation);
+          if (overlappingReservation) {
+            throw new BadRequestException(conflictMessage);
+          }
+
+          return tx.reservation.create({
+            data: {
+              customerId: customer.id,
+              unitId: unit.id,
+              startTime,
+              endTime,
+              status: unit.requiresConfirmation
+                ? ReservationStatus.PENDING
+                : ReservationStatus.CONFIRMED,
+              totalPrice,
+              bailPaid: createReservationDto.bailPaid ?? false,
+              isSplit: createReservationDto.isSplit ?? false,
+            },
+            include: reservationRelations,
+          });
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+
+      return this.toSummary(reservation);
+    } catch (error) {
+      // P2034: a transação concorrente venceu (conflito de escrita/serialização)
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2034'
+      ) {
+        throw new BadRequestException(conflictMessage);
+      }
+      throw error;
+    }
   }
 
   async findMine(
